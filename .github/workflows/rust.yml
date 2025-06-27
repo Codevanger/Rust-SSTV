@@ -3,6 +3,7 @@ name: Rust
 on:
   push:
     branches: [ "main" ]
+    tags:     [ "v*" ]      # ← триггер на версии
   pull_request:
     branches: [ "main" ]
 
@@ -12,6 +13,7 @@ env:
   GUI_BIN: gui
 
 jobs:
+# ──────────────────────────── BUILD ────────────────────────────
   build:
     name: Build ${{ matrix.os }} binaries
     runs-on: ${{ matrix.os }}
@@ -21,12 +23,12 @@ jobs:
 
     defaults:
       run:
-        shell: bash   # единое разворачивание $VARS
+        shell: bash
 
     steps:
       - uses: actions/checkout@v4
 
-      # ---------- Linux system deps ----------
+      # Linux-зависимости
       - name: Install ALSA + pkg-config (Linux only)
         if: runner.os == 'Linux'
         run: |
@@ -40,15 +42,15 @@ jobs:
           override: true
           components: clippy,rustfmt
 
-      # ---------- CLI ----------
+      # ─ CLI
       - name: Build ${{ env.CLI_BIN }}
         run: cargo build --release --bin "$CLI_BIN"
 
-      # ---------- GUI ----------
+      # ─ GUI
       - name: Build ${{ env.GUI_BIN }}
         run: cargo build --release --bin "$GUI_BIN"
 
-      # ---------- Artifacts ----------
+      # ─ Upload artifacts
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -56,3 +58,33 @@ jobs:
           path: |
             target/release/${{ env.CLI_BIN }}${{ runner.os == 'Windows' && '.exe' || '' }}
             target/release/${{ env.GUI_BIN }}${{ runner.os == 'Windows' && '.exe' || '' }}
+
+# ─────────────────────────── RELEASE ───────────────────────────
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')   # запускается только на тег
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist            # всё сложится в dist/*
+
+      # (необязательно) можно упаковать файлы в архивы, если нужно
+      # - name: Zip assets
+      #   run: |
+      #     cd dist
+      #     for dir in *-binaries; do
+      #       zip -j "${dir}.zip" "$dir"/*
+      #     done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}     # vX.Y.Z
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/**                # прикрепляем всё, что скачали
