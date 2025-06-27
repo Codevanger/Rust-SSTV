@@ -8,8 +8,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  CLI_BIN:  cli
-  GUI_BIN:  gui
+  CLI_BIN: cli
+  GUI_BIN: gui
 
 jobs:
   build:
@@ -19,6 +19,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
 
+    # Базово используем bash, чтобы переменные $CLI_BIN / $GUI_BIN
+    # одинаково разворачивались и в Linux, и в Windows раннерах.
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -27,16 +33,16 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          override:  true
+          override: true
           components: clippy,rustfmt
 
       # ---------- CLI ----------
-      - name: Build CLI (${{ env.CLI_BIN }})
-        run: cargo build --release --bin $CLI_BIN
+      - name: Build ${{ env.CLI_BIN }}
+        run: cargo build --release --bin "$CLI_BIN"
 
       # ---------- GUI ----------
-      - name: Build GUI (${{ env.GUI_BIN }})
-        run: cargo build --release --bin $GUI_BIN
+      - name: Build ${{ env.GUI_BIN }}
+        run: cargo build --release --bin "$GUI_BIN"
 
       # ---------- Artifacts ----------
       - name: Upload release artifacts
