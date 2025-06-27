@@ -19,15 +19,19 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
 
-    # Базово используем bash, чтобы переменные $CLI_BIN / $GUI_BIN
-    # одинаково разворачивались и в Linux, и в Windows раннерах.
     defaults:
       run:
-        shell: bash
+        shell: bash   # единое разворачивание $VARS
 
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      # ---------- Linux system deps ----------
+      - name: Install ALSA + pkg-config (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pkg-config
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
