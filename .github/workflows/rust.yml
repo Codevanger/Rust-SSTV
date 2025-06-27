@@ -8,8 +8,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  CLI_BIN:  cli_bin
-  GUI_BIN:  gui_bin
+  CLI_BIN:  cli
+  GUI_BIN:  gui
 
 jobs:
   build:
